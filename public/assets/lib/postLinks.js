@@ -24,6 +24,14 @@ export function isVozUrl(value) {
   }
 }
 
+// voz's /goto/post?id=N permalink redirect — SPA equivalent is /p/N/.
+// Never send it to the /forum proxy: voz blocks the proxied goto hop.
+function gotoPostPath(pathname, search) {
+  if (pathname !== '/goto/post' && pathname !== '/goto/post/') return null;
+  const id = new URLSearchParams(search).get('id');
+  return /^\d+$/.test(id || '') ? `/p/${id}/` : null;
+}
+
 // "https://voz.vn/t/a.1/" → "/t/a.1/"; null when the link has no local route.
 export function localPathFor(value) {
   let url;
@@ -35,6 +43,9 @@ export function localPathFor(value) {
   if (url.origin !== VOZ_ORIGIN) return null;
   const path = url.pathname;
   if (VOZ_ONLY_SUFFIXES.some((suffix) => path.endsWith(suffix))) return null;
+  // /goto/post?id=N folds into the local /p/N/ SPA route.
+  const gotoPost = gotoPostPath(path, url.search);
+  if (gotoPost) return gotoPost;
   const mapped = WHATS_NEW_MAP.get(path.replace(/\/+$/, ''));
   if (mapped) return `${mapped}${url.search}${url.hash}`;
   if (!LOCAL_PREFIXES.some((prefix) => path.startsWith(prefix))) return null;
