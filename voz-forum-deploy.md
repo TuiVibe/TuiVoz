@@ -77,7 +77,7 @@ TuiVoz/
 | `jumpToAnchor.js` | Scroll tới `#post-N` dưới sticky header; bù ảnh tải muộn; `revealFilteredBlock` cho post bị ẩn. |
 | `media.js` | Embed YouTube/TikTok/Facebook/Reddit/Twitter/SoundCloud/Douyin/Flickr. |
 | `pikUpload.js` | Upload ảnh pik.vn: resize ≤1920px JPEG 0.85, song song 3 luồng → `[IMG]`. |
-| `postLinks.js` | Rewrite link voz.vn → URL SPA (local route) hoặc `/forum/…` (XenForo-only route, qua proxy giữ session). `/whats-new`+`/whats-new/posts` exact → `/new` (`WHATS_NEW_MAP`); `/whats-new/latest-activity`/`profile-posts` không có API → link `/forum/…` proxy thường (full nav), không cần route SPA riêng. |
+| `postLinks.js` | Rewrite link voz.vn → URL SPA (local route) hoặc `/forum/…` (XenForo-only route, qua proxy giữ session). `/whats-new`+`/whats-new/posts` exact → `/new` (`WHATS_NEW_MAP`); `/goto/post?id=N` → `/p/N/` (§7.9); `/whats-new/latest-activity`/`profile-posts` không có API → link `/forum/…` proxy thường (full nav), không cần route SPA riêng. |
 | `postScreenshot.js` | `renderPostPng` (SVG foreignObject, proxy ảnh → dataURI chống taint; `data:` SVG cho Chrome) + popup Sao chép / Chia sẻ / Tải xuống (Web Share L2; Firefox không share file → fallback URL). |
 | `prefix.js` / `userBadges.js` | Màu/nhãn prefix thread; huy hiệu member. |
 | `quotes.js` / `spoilers.js` / `signature.js` | Collapse quote >800px (fade overlay 400px `.quote-expand-link` — phải giữ `z-index` thấp + `overflow:hidden` trên blockquote, trước đây z-100 trùng z nav → overlay đè lên sticky header/nav khi cuộn lên); toggle spoiler; render chữ ký. |
@@ -148,7 +148,7 @@ TuiVoz/
 Link `?post=<id>`/`post-<id>` không mang số trang → thread mở trang 1, anchor thiếu, scroll reset về đầu.
 - `paths.js`: `postPage`/`postPath` → `/t/<slug>.<id>/page-N/#post-<id>` (dùng `position` + `perPage`).
 - `threadRow.js` `postRow`/`memberPostRow`/`memberActivityRow` + views (search/lists/user) truyền `perPage`.
-- `router.js` `postLocation(postId)` chuẩn hoá mọi `?post=` cũ trước render; `/p/:id` dùng chung.
+- `router.js` `postLocation(postId)` chuẩn hoá mọi `?post=` cũ trước render; `/p/:id` dùng chung; `/goto/post?id=N` cũng route local → `/p/N/` (§7.9).
 - `views/thread.js`: có `focusPost` thì luôn `keepCurrentScroll()` trước khi jump.
 
 ### §7.2 Attachments không hiển thị
@@ -268,3 +268,10 @@ Login trên `/forum/` submit tới `/login/login` (thiếu `/forum`) → 405 red
 ## 2025 — login instructions split first-login vs add-account
 
 Block hướng dẫn first-login ("Nhấn Đăng nhập với voz.vn → điều hướng tới proxy → đăng nhập → bấm thêm lần nữa") giờ chỉ hiện khi **chưa** có account nào (`addingAccount` false); khi thêm tài khoản chỉ hiện block hướng dẫn multi-account. Viết lại text gọn hơn (3 bước). Bump sw.js v28→v29.
+
+### §7.9 Link `/goto/post?id=N` qua proxy bị voz chặn
+Triệu chứng: link `voz.vn/goto/post?id=X` trong post/alert/push được `rewriteVozLinks` đẩy qua `/forum/goto/post?id=X` (không có route SPA local) → request HTML hop redirect qua proxy bị voz/Cloudflare chặn; cùng link dạng `/p/X/` thì ok vì đi SPA REST API.
+- `postLinks.js`: helper `gotoPostPath` — `/goto/post?id=N` (có/không trailing slash) → `/p/N/`; `localPathFor` check ngay sau `VOZ_ONLY_SUFFIXES`, trước `LOCAL_PREFIXES` (goto không nằm trong prefix list).
+- `router.js`: route trực tiếp `head === 'goto' && segments[1] === 'post' && id số` → `navigate('/p/N/', {replace:true})` (phòng khi link dán thẳng vào app).
+- `sw.js` `notificationclick`: push payload có `url=voz.vn/goto/post?id=N` → mở `/p/N/` thay vì trang voz; bump CACHE v35→v36. `lists.js` + `headerMenus.js` fallback `alert_url` cũng rewrite `/goto/post?id=N` → `/p/N/`.
+- Gotcha: `/goto/post` hop redirect là HTML, proxy `/forum` chỉ sống sót với REST; mọi permalink dạng redirect của voz phải fold vào route SPA tương ứng ngay ở tầng link.

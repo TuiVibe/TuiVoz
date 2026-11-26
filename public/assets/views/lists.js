@@ -28,7 +28,7 @@ export async function viewAlerts(page) {
               <div class="alert-row${a.read_date ? '' : ' is-unread'}">
                 <a href="${userPath(a.User || { user_id: a.user_id, username: a.username })}" class="avatar">${avatarMarkup(a.User, 's')}</a>
                 <div class="alert-main">
-                  <a data-alert="${a.alert_id}" href="${a.content_type === 'post' && a.content_id ? `/p/${Number(a.content_id)}/` : a.content_type === 'profile_post' && a.content_id ? `/profile-posts/${Number(a.content_id)}/` : a.content_type === 'profile_post_comment' && a.content_id ? `/profile-posts/comments/${Number(a.content_id)}/` : a.alert_url ? a.alert_url.replace(/^https?:\/\/voz\.vn/, '') : userPath(a.User || { user_id: a.user_id, username: a.username })}">${await alertTextMarkup(a)}</a>
+                  <a data-alert="${a.alert_id}" href="${a.content_type === 'post' && a.content_id ? `/p/${Number(a.content_id)}/` : a.content_type === 'profile_post' && a.content_id ? `/profile-posts/${Number(a.content_id)}/` : a.content_type === 'profile_post_comment' && a.content_id ? `/profile-posts/comments/${Number(a.content_id)}/` : a.alert_url ? a.alert_url.replace(/^https?:\/\/voz\.vn\/goto\/post\?id=(\d+).*$/, '/p/$1/').replace(/^https?:\/\/voz\.vn/, '') : userPath(a.User || { user_id: a.user_id, username: a.username })}">${await alertTextMarkup(a)}</a>
                   ${a.content_title ? `<div class="u-smaller u-dimmed">${esc(a.content_title)}</div>` : ''}
                   <div class="alert-time">${timeAgo(a.event_date)}</div>
                 </div>

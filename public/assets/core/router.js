@@ -75,6 +75,10 @@ export async function route() {
       if (!target) throw new Error('Không xác định được trang của bài viết');
       return navigate(`${withPage(threadPath({ thread_id: target.threadId, title: target.title }), target.page)}#post-${segments[1]}`, { replace: true });
     }
+    // voz permalink /goto/post?id=N lands here when pasted directly.
+    if (head === 'goto' && segments[1] === 'post' && /^\d+$/.test(params.get('id') || '')) {
+      return navigate(`/p/${params.get('id')}/`, { replace: true });
+    }
     if (head === 'f' && segments[2] === 'post-thread') return await (await import('../views/compose.js')).viewCompose(idFromSegment(segments[1]));
     if (head === 'f') return await viewForum(idFromSegment(segments[1]), page);
     if (head === 's') return await viewSearchForum(idFromSegment(segments[1]), page);

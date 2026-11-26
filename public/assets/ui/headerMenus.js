@@ -47,7 +47,7 @@ export function wireHeaderMenus() {
         const user = item.Starter || item.User || { user_id: item.user_id, username: item.username };
         const alertHref = item.content_type === 'post' && item.content_id
           ? `/p/${Number(item.content_id)}/`
-          : item.alert_url ? item.alert_url.replace(/^https?:\/\/voz\.vn/, '') : userPath(user);
+          : item.alert_url ? item.alert_url.replace(/^https?:\/\/voz\.vn\/goto\/post\?id=(\d+).*$/, '/p/$1/').replace(/^https?:\/\/voz\.vn/, '') : userPath(user);
         const title = kind === 'dm'
           ? `<a href="${dmPath(item)}">${esc(item.title)}</a>`
           : `<a href="${alertHref}">${await alertTextMarkup(item)}</a>`;

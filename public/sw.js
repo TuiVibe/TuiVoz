@@ -1,6 +1,6 @@
 /** Service worker — cache-first for versioned statics only; never caches /api/*. */
 
-const CACHE = 'tv-static-v35';
+const CACHE = 'tv-static-v36';
 const CACHEABLE = /\/assets\/(css|icons|lib|ui|views|fonts)\//;
 
 self.addEventListener('install', (e) => {
@@ -69,7 +69,10 @@ self.addEventListener('notificationclick', (e) => {
   let url = raw;
   try {
   const u = new URL(raw, location.origin);
-  if (u.host === 'voz.vn') url = location.origin + u.pathname + u.search + u.hash;
+  // voz /goto/post?id=N proxy hop gets blocked; fold into the local /p/N/.
+  const gotoId = u.pathname === '/goto/post' && (new URLSearchParams(u.search).get('id') || '');
+  if (/^\d+$/.test(gotoId)) url = `${location.origin}/p/${gotoId}/`;
+  else if (u.host === 'voz.vn') url = location.origin + u.pathname + u.search + u.hash;
   } catch {
   /* keep raw */
   }
