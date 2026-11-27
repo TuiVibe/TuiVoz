@@ -43,7 +43,7 @@ export function mountInfiniteScroll(options) {
   const label = () => {
     if (state.failed) return `Không tải được trang ${state.page + 1}. `;
     if (state.busy) return `Đang tải trang ${state.page + 1}…`;
-    return `Trang ${state.page + 1} / ${state.lastPage}`;
+    return `Trang ${state.page} / ${state.lastPage}`;
   };
   state.refreshLabel = () => {
     const status = sentinel.querySelector('.infinite-status');
@@ -68,13 +68,14 @@ export function mountInfiniteScroll(options) {
         return;
       }
       state.page = target;
+      state.lastPage = Number(res?.pagination?.last_page) || state.lastPage;
       try {
         // Keep `history.state`; null would drop the scroll-position key.
         history.replaceState(history.state, '', `${state.makeHref(target)}${location.hash}`);
       } catch {
         /* replaceState can fail on a stale entry; URL is cosmetic. */
       }
-      state.onPageAppended?.(target, res);
+      state.onPageAppended?.(target, res, { lastPage: state.lastPage, armed: state.armed });
       state.refreshLabel();
       if (state.page >= state.lastPage) teardownInfiniteScroll();
     } catch (error) {

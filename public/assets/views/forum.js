@@ -7,7 +7,7 @@ import { api } from '../api.js';
 import { setActiveNav, setBreadcrumbs } from '../ui/chrome.js';
 import { setTitle, setBrandTitle } from '../ui/title.js';
 import { loading, errorBox } from '../ui/feedback.js';
-import { pagination, wirePageJump, wireScrollArm } from '../ui/pagination.js';
+import { pagination, wirePageJump, wireScrollArm, updatePager } from '../ui/pagination.js';
 import { wireThreadRowBans } from '../ui/threadRow.js';
 import { threadEntriesHtml } from '../filters/apply.js';
 import { nodeTree, subForumBlock } from '../ui/forumNodes.js';
@@ -98,6 +98,10 @@ export async function viewForum(nodeId, page) {
       after: document.getElementById('pager-slot'),
       fetchPage: (p) => api.forumThreads(nodeId, p),
       insert: (p, res) => appendThreadRows('thread-rows', res.threads || []),
+      onPageAppended: (p, _res, { lastPage, armed }) => {
+        updatePager(document.getElementById('pager-slot'), { current_page: p, last_page: lastPage }, href, { scrollArmed: armed });
+        setTitle(forum.title, p);
+      },
     });
   } catch (err) {
     app.innerHTML = errorBox(err);
@@ -162,6 +166,10 @@ export async function viewSearchForum(nodeId, page) {
         group.insertAdjacentHTML('beforeend', threadEntriesHtml(rows, { showForum: true }));
         wireThreadRowBans(group, rows);
         return rows.length;
+      },
+      onPageAppended: (p, _res, { lastPage, armed }) => {
+        updatePager(document.getElementById('pager-slot'), { current_page: p, last_page: lastPage }, href, { scrollArmed: armed });
+        setTitle(node.title, p);
       },
     });
   } catch (err) {
