@@ -53,6 +53,17 @@ async function sendSamTelemetry() {
     if (!/data-logged-in="true"/.test(html)) return;
     const csrf = (html.match(/csrf:\s*'([^']+)'/) || [])[1];
     if (!csrf) return;
+    // window._xfr watchdog: voz writes this token into cookie xf_ls only when
+    // ads render. Missing xf_ls reads as adblock — emulate the trail; the
+    // proxy forwards xf_* cookies to voz like the real ones.
+    const xfr = (html.match(/window\._xfr\s*=\s*"([^"]+)"/) || [])[1];
+    if (xfr) {
+      try {
+        const cur = (document.cookie.match(/(?:^|; )xf_ls=([^;]*)/) || [])[1];
+        const list = (cur ? cur.split('_') : []).concat(xfr).slice(-10);
+        document.cookie = `xf_ls=${list.join('_')}; path=/; max-age=172800; samesite=lax; secure`;
+      } catch { /* ignore */ }
+    }
     const items = parseAdItems(html);
     if (!items.length) return;
     await Promise.allSettled(items.map(({ id, position }) => {
