@@ -123,7 +123,12 @@ export function restoreSpoilers(root, bbcode) {
     else for (const child of node.children) collect(child);
   }
   collect(tree);
-  const placeholders = [...root.querySelectorAll('div')].filter((el) => !el.children.length && el.textContent.trim() === 'Spoiler content hidden.');
+  // Phrase is localized upstream (en/vi/etc); count-equality below is the real guard.
+  const placeholders = [...root.querySelectorAll('div')].filter((el) => {
+    if (el.children.length) return false;
+    const text = el.textContent.trim();
+    return text.length < 200 && /spoiler/i.test(text);
+  });
   if (placeholders.length !== spoilers.length) return;
   placeholders.forEach((el, index) => el.replaceWith(render(spoilers[index], root.ownerDocument)));
 }

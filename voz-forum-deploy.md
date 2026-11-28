@@ -283,3 +283,10 @@ Triệu chứng: ở trang 1 (chế độ `manual`), thanh phân trang highlight
 - `infiniteScroll.js`: `label()` idle dùng `state.page` thay vì `state.page + 1`; `loadNext()` cập nhật `state.lastPage` và truyền `{ lastPage, armed }` qua `onPageAppended`.
 - `pagination.js`: thêm `updatePager()` + `scrollArmed` option để giữ trạng thái nút cuộn; guard `dataset.wired` trong `wirePageJump` tránh gán trùng listener lên thanh phân trang trên.
 - `views/thread.js`, `views/forum.js`: truyền `onPageAppended` gọi `updatePager(#pager-slot)` và cập nhật `document.title`. Bump `sw.js` `tv-static-v38`→`v39`.
+
+### §7.11 Spoiler API placeholder bản địa hoá theo ngôn ngữ → restoreSpoilers miss
+Triệu chứng: post chỉ hiện `Nội dung spoiler đã bị ẩn.` không click mở được — `[SPOILER]…[/SPOILER]` bị giấu hẳn.
+- Nguyên nhân: upstream XenForo API trả `<div>Nội dung spoiler đã bị ẩn.</div>` (tiếng Việt) cho guest key, trong khi `spoilers.js` `restoreSpoilers` chỉ match chuỗi Anh `'Spoiler content hidden.'` → `placeholders.length !== spoilers.length` → bỏ qua restore. Ngôn ngữ placeholder phụ thuộc upstream (không ổn định) nên hiện tượng "localhost chạy / Vercel hỏng" (hoặc ngược lại) chỉ là lúc upstream trả en vs vi, không phải khác biệt local/Vercel.
+- Fix: match placeholder **không phụ thuộc ngôn ngữ** — leaf `<div>` text ngắn (<200 ký tự) chứa `spoiler` case-insensitive; guard thật vẫn là count-equality với số `[spoiler]` trong raw bbcode (post viết tay có chữ "spoiler" một mình không lệch count vì số div ≠ số tag spoiler).
+- Verify: post 44499707 thread 1302974 (`[SPOILER]NYKD-54[/SPOILER]`) giờ render `<details class="post-spoiler"><summary>Spoiler</summary>NYKD-54</details>` đúng như voz.vn.
+- Bump `sw.js` `tv-static-v39`→`v40` (bắt buộc vì `lib/` nằm trong CACHEABLE).
