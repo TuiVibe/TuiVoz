@@ -11,7 +11,7 @@ import { api, ApiError } from '../api.js';
 import { setActiveNav, setBreadcrumbs } from '../ui/chrome.js';
 import { setThreadTitle } from '../ui/title.js';
 import { loading, errorBox, toast } from '../ui/feedback.js';
-import { pagination, wirePageJump, wireScrollArm } from '../ui/pagination.js';
+import { pagination, wirePageJump, wireScrollArm, updatePager } from '../ui/pagination.js';
 import { postEntriesHtml } from '../filters/apply.js';
 import { wireThreadRowBans } from '../ui/threadRow.js';
 import { hydrateReactionLists, reactionBar, reactionSummary, invalidateReactionUsers } from '../ui/reactions.js';
@@ -236,8 +236,9 @@ export async function viewThread(threadId, page, focusPost) {
     wireScrollArm();
     hydrateReactionLists(app);
     // Per-page wiring (attachments, tooltips) repeats on each append.
+    const pagerHref = (p) => withPage(threadPath(thread), p);
     mountInfiniteScroll({
-      makeHref: (p) => withPage(threadPath(thread), p),
+      makeHref: pagerHref,
       currentPage: res.pagination?.current_page || 1,
       lastPage: res.pagination?.last_page || 1,
       after: document.getElementById('pager-slot'),
@@ -256,6 +257,10 @@ export async function viewThread(threadId, page, focusPost) {
         for (const post of more) postIndex.set(post.post_id, post);
         markReadUpTo(threadId, thread.is_unread, more);
         return more.length;
+      },
+      onPageAppended: (p, _next, { lastPage, armed }) => {
+        updatePager(document.getElementById('pager-slot'), { current_page: p, last_page: lastPage }, pagerHref, { scrollArmed: armed });
+        setThreadTitle(thread, p);
       },
     });
     // Reading last page clears the bold title in forum listing.

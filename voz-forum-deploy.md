@@ -110,7 +110,7 @@ TuiVoz/
 | `lightbox.js` | Overlay xem ảnh: capture-click trên `.message-userContent`, gallery DOM order, nút zoom `−`/`+` (×1.5, max ×6), wheel/double-click/drag-pan; **chỉ đóng bằng ✕/Esc**. |
 | `threadRow.js` | Row chủ đề/kết quả; `threadRow`/`postRow`/`member*Row` nhận `perPage` + `extraClass`/`extraStyle` + link qua `postPath`. |
 | `inlineEdit.js`, `reactions.js`, `postNumberPopup.js`, `memberTooltip.js`, `threadModeration.js`, `imageResizer.js`, `titleHold.js` | Sửa tại chỗ; reaction bar + strip người thả (strip chỉ render khi `reactorNames` bật; tắt → bấm `.reaction-count` trên nút reaction mở modal `.modal--reactors` list đầy đủ giống voz, listener capture-phase chạy trước react handler — avatar scrape từ `img.avatar` trong HTML `/p/:id/reactions`, `data-member-id` wire `memberTooltip` hover/tap; click tên trong modal đóng modal + đi tới profile); popup permalink #post; hover card member; mod tools; overlay kéo-resize ảnh trong editor; nhấn giữ tiêu đề. |
-| `forumNodes.js`, `headerMenus.js`, `unreadCounts.js`, `chrome.js`, `chromeAutoHide.js`, `infiniteScroll.js`, `pagination.js`, `theme.js`, `modal.js`, `feedback.js`, `title.js`, `session.js`, `alertMarkup.js` | Cây node; dropdown header; badge đỏ; header/breadcrumb/menu + nav shortcuts; auto-hide khi cuộn (REVEAL_THRESHOLD 8px); infinite scroll 3 chế độ; phân trang + `wirePageJump`; theme/scale biến CSS; modal/toast/errorBox; `document.title`; `loadSession`/`requireLogin`; markup thông báo. |
+| `forumNodes.js`, `headerMenus.js`, `unreadCounts.js`, `chrome.js`, `chromeAutoHide.js`, `infiniteScroll.js`, `pagination.js`, `theme.js`, `modal.js`, `feedback.js`, `title.js`, `session.js`, `alertMarkup.js` | Cây node; dropdown header; badge đỏ; header/breadcrumb/menu + nav shortcuts; auto-hide khi cuộn (REVEAL_THRESHOLD 8px); infinite scroll 3 chế độ; phân trang + `wirePageJump`/`updatePager`; theme/scale biến CSS; modal/toast/errorBox; `document.title`; `loadSession`/`requireLogin`; markup thông báo. |
 
 ### `views/`
 
@@ -277,3 +277,9 @@ Triệu chứng: link `voz.vn/goto/post?id=X` trong post/alert/push được `re
 - `router.js`: route trực tiếp `head === 'goto' && segments[1] === 'post' && id số` → `navigate('/p/N/', {replace:true})` (phòng khi link dán thẳng vào app).
 - `sw.js` `notificationclick`: push payload có `url=voz.vn/goto/post?id=N` → mở `/p/N/` thay vì trang voz; bump CACHE v35→v36. `lists.js` + `headerMenus.js` fallback `alert_url` cũng rewrite `/goto/post?id=N` → `/p/N/`.
 - Gotcha: `/goto/post` hop redirect là HTML, proxy `/forum` chỉ sống sót với REST; mọi permalink dạng redirect của voz phải fold vào route SPA tương ứng ngay ở tầng link.
+
+### §7.10 Lệch số trang giữa thanh phân trang dưới và infinite-scroll sentinel
+Triệu chứng: ở trang 1 (chế độ `manual`), thanh phân trang highlight `1` nhưng dòng `.infinite-sentinel` ngay dưới lại hiển thị `Trang 2 / N`, và khi cuộn vô hạn nối trang mới thanh phân trang dưới vẫn kẹt ở `1`.
+- `infiniteScroll.js`: `label()` idle dùng `state.page` thay vì `state.page + 1`; `loadNext()` cập nhật `state.lastPage` và truyền `{ lastPage, armed }` qua `onPageAppended`.
+- `pagination.js`: thêm `updatePager()` + `scrollArmed` option để giữ trạng thái nút cuộn; guard `dataset.wired` trong `wirePageJump` tránh gán trùng listener lên thanh phân trang trên.
+- `views/thread.js`, `views/forum.js`: truyền `onPageAppended` gọi `updatePager(#pager-slot)` và cập nhật `document.title`. Bump `sw.js` `tv-static-v38`→`v39`.

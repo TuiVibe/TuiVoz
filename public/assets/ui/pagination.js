@@ -6,7 +6,7 @@ import { navigate } from '../core/nav.js';
 import { getInfiniteScroll } from '../lib/settings.js';
 import { armInfiniteScroll } from './infiniteScroll.js';
 
-export function pagination(p, makeHref, extraHtml = '', { scrollArm = true } = {}) {
+export function pagination(p, makeHref, extraHtml = '', { scrollArm = true, scrollArmed = false } = {}) {
   if (!p || !p.last_page || p.last_page <= 1) return '';
   const current = p.current_page || 1;
   const last = p.last_page;
@@ -35,7 +35,7 @@ export function pagination(p, makeHref, extraHtml = '', { scrollArm = true } = {
   // Per-page opt-in for continuous scroll; only the bottom pager carries it.
   const scrollBtn =
     scrollArm && current < last && getInfiniteScroll() === 'manual'
-      ? `<button type="button" class="pageNav-scrollBtn" data-scroll-arm title="Bật cuộn liên tục cho trang này" aria-label="Bật cuộn liên tục cho trang này"><span class="pageNav-scrollIcon" aria-hidden="true">⇣</span></button>`
+      ? `<button type="button" class="pageNav-scrollBtn${scrollArmed ? ' is-active' : ''}" data-scroll-arm${scrollArmed ? ' disabled' : ''} title="${scrollArmed ? 'Đang cuộn liên tục' : 'Bật cuộn liên tục cho trang này'}" aria-label="${scrollArmed ? 'Đang cuộn liên tục' : 'Bật cuộn liên tục cho trang này'}"><span class="pageNav-scrollIcon" aria-hidden="true">⇣</span></button>`
       : '';
 
   return `<div class="pageNav">
@@ -67,6 +67,8 @@ export function wireScrollArm() {
 // Clicking "…" swaps it for a page-number input.
 export function wirePageJump(makeHref) {
   for (const btn of app.querySelectorAll('.pageNav-jumpBtn')) {
+    if (btn.dataset.wired) continue;
+    btn.dataset.wired = '1';
     btn.addEventListener('click', (event) => {
       event.preventDefault();
       if (btn.dataset.active === '1') return;
@@ -101,4 +103,13 @@ export function wirePageJump(makeHref) {
       });
     });
   }
+}
+
+// Re-renders the bottom pager slot after infinite scroll appends a page.
+export function updatePager(slot, p, makeHref, options = {}) {
+  if (!slot) return;
+  const host = slot.querySelector('.block-outer-main') || slot;
+  host.innerHTML = pagination(p, makeHref, '', options);
+  wirePageJump(makeHref);
+  wireScrollArm();
 }
